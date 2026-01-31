@@ -25,70 +25,10 @@ local Window = Rayfield:CreateWindow({
     }
 })
 
--- Discord Execution Log Webhook (added here)
-local HttpService = game:GetService("HttpService")
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1467281139910578449/RTbF31Gkso0Izm2iiRGMz5cJSQm9RdcvUIV6cyqzdwX9vG7zbf7i96fXy5ugM4Cm6s3H" -- <-- REPLACE THIS WITH YOUR DISCORD WEBHOOK URL
-
-local player = game.Players.LocalPlayer
-local username = player.Name
-local display_name = player.DisplayName
-local user_id = player.UserId
-local avatar_url = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. user_id .. "&width=420&height=420&format=png"
-local executor = identifyexecutor and identifyexecutor() or "Unknown Executor"
-local time_executed = os.date("%Y-%m-%d %H:%M:%S", os.time())
-
-local embed = {
-    title = "Execution log",
-    color = 65280, -- Green color (you can change this hex value)
-    thumbnail = {
-        url = avatar_url -- This places the Roblox avatar icon at the top right of the embed
-    },
-    fields = {
-        {
-            name = "Username",
-            value = username,
-            inline = true
-        },
-        {
-            name = "Display name",
-            value = display_name,
-            inline = true
-        },
-        {
-            name = "Executor",
-            value = executor,
-            inline = true
-        },
-        {
-            name = "Total executions",
-            value = "1", -- Per-execution log; change if you want to track differently
-            inline = true
-        },
-        {
-            name = "Time executed",
-            value = time_executed,
-            inline = true
-        }
-    },
-    footer = {
-        text = "Project P58 | Executed via " .. executor
-    }
-}
-
-local payload = {
-    embeds = {embed}
-}
-
--- Send the webhook (silent fail if it errors)
-pcall(function()
-    HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(payload), Enum.HttpContentType.ApplicationJson)
-end)
-
--- Original code continues here...
 local MainTab = Window:CreateTab("Main", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 local FarmsTab = Window:CreateTab("Farms", 4483362458)
--- VisualTab removed as requested
+
 local Players = cloneref(game:GetService("Players"))
 local RunService = cloneref(game:GetService("RunService"))
 local UserInputService = cloneref(game:GetService("UserInputService"))
