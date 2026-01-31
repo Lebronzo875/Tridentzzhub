@@ -1,4 +1,12 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+end)
+
+if not success or not Rayfield then
+    warn("Failed to load Rayfield UI: " .. tostring(Rayfield))
+    return -- Stop script safely
+end
+
 local Window = Rayfield:CreateWindow({
    Name = "Trident Hub",
    LoadingTitle = "Loading Trident Hub...",
@@ -13,19 +21,20 @@ local Window = Rayfield:CreateWindow({
       Invite = "https://discord.gg/cn4NDA5nJS",
       RememberJoins = true
    },
-   KeySystem = true, -- Key system enabled
+   KeySystem = true,
    KeySettings = {
       Title = "Untitled",
       Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
    }
 })
 
 local executor = identifyexecutor and identifyexecutor() or "Unknown Executor"
+-- ... (everything else stays the same from here)
 
 local MainTab = Window:CreateTab("Main", 4483362458)
 local TeleportsTab = Window:CreateTab("Teleports", 4483362458)
