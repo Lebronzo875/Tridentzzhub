@@ -13,7 +13,7 @@ local Window = Rayfield:CreateWindow({
         Invite = "https://discord.gg/3cMRMVgffD",
         RememberJoins = true
     },
-    KeySystem = false,
+    KeySystem = true,
     KeySettings = {
         Title = "ProjectP58 Key system",
         Subtitle = "Key System",
@@ -21,27 +21,31 @@ local Window = Rayfield:CreateWindow({
         FileName = "Key",
         SaveKey = true,
         GrabKeyFromSite = false,
-        Key = {"P58ADMIN, Z6WJQ4R8XN "}
+        Key = {"P58ADMIN", "K2A9P7F3ML"}
     }
 })
 
-local MainTab = Window:CreateTab("Main", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
-local FarmsTab = Window:CreateTab("Farms", 4483362458)
+local MainTab     = Window:CreateTab("Main",     4483362458)
+local TeleportsTab = Window:CreateTab("Teleports", 4483362458)
+local MiscTab     = Window:CreateTab("Misc",     4483362458)
+local FarmsTab    = Window:CreateTab("Farms",    4483362458)
 
-local Players = cloneref(game:GetService("Players"))
-local RunService = cloneref(game:GetService("RunService"))
+local Players          = cloneref(game:GetService("Players"))
+local RunService       = cloneref(game:GetService("RunService"))
 local UserInputService = cloneref(game:GetService("UserInputService"))
-local Lighting = cloneref(game:GetService("Lighting"))
-local Workspace = cloneref(game:GetService("Workspace"))
+local Lighting         = cloneref(game:GetService("Lighting"))
+local Workspace        = cloneref(game:GetService("Workspace"))
 local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+
 local LocalPlayer = Players.LocalPlayer
+
 -- Movement variables
 local movementEnabled = false
 local currentWalkSpeed = 16
 local fastFallSpeed = -50
 local moveConnection = nil
 local DeathFrame = nil
+
 local ModFlags = {
     InfiniteHunger = false,
     InfiniteStamina = false,
@@ -57,14 +61,17 @@ local ModFlags = {
     InfiniteJump = false,
     InstantInteraction = false,
 }
+
 -- Dupe variables
 local running = false
+
 local function getPing()
     local success, ping = pcall(function()
         return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
     end)
     return success and math.clamp(ping, 30, 400) or 150
 end
+
 local function dupeOne()
     pcall(function()
         local char = LocalPlayer.Character
@@ -72,20 +79,17 @@ local function dupeOne()
             Rayfield:Notify({Title="Dupe Failed",Content="No character loaded",Duration=3})
             return
         end
-        -- Find any tool (gun)
         local tool = char:FindFirstChildOfClass("Tool") or LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
         if not tool then
             Rayfield:Notify({Title="Dupe Error",Content="Equip a gun first!",Duration=4})
             return
         end
-        -- Equip if needed
         if tool.Parent == LocalPlayer.Backpack then
             tool.Parent = char
             task.wait(0.4)
         end
         local toolName = tool.Name
         local specialId = nil
-        -- Catch the SpecialId when market item spawns
         local conn = game.ReplicatedStorage.MarketItems.ChildAdded:Connect(function(item)
             if item.Name == toolName then
                 local owner = item:FindFirstChild("owner")
@@ -94,21 +98,16 @@ local function dupeOne()
                 end
             end
         end)
-        -- Adaptive timing (works better on laggy servers)
         local pingAdjust = getPing() / 1000 * 1.2
         local delay = 0.28 + pingAdjust
-        -- Step 1: Fake list weapon
         game.ReplicatedStorage.ListWeaponRemote:FireServer(toolName, 999999)
         task.wait(delay)
-        -- Step 2: Store to backpack
         game.ReplicatedStorage.BackpackRemote:InvokeServer("Store", toolName)
         task.wait(delay + 0.15)
-        -- Step 3: Remove from market if we captured ID
         if specialId then
             game.ReplicatedStorage.BuyItemRemote:FireServer(toolName, "Remove", specialId)
             task.wait(0.35)
         end
-        -- Step 4: Grab duplicate back
         game.ReplicatedStorage.BackpackRemote:InvokeServer("Grab", toolName)
         conn:Disconnect()
         Rayfield:Notify({
@@ -119,36 +118,47 @@ local function dupeOne()
         })
     end)
 end
--- Auto dupe loop with slight randomization to avoid detection
+
 task.spawn(function()
     while true do
         if running then
             dupeOne()
-            task.wait(1.7 + math.random(2,8)/10) -- 1.7–2.5s random delay
+            task.wait(1.7 + math.random(2,8)/10)
         else
             task.wait(0.1)
         end
     end
 end)
+
 local function FadeIn(duration) end
 local function FadeOut(duration) end
+
 local function teleportTo(cf)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    
+    hum:ChangeState(0)
+    repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
+    
     hrp.Anchored = true
     hrp.CFrame = cf
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
+    
     task.defer(function()
         hrp.Anchored = false
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
+        hum:ChangeState(2)
     end)
 end
+
 local function getHumanoid()
     local char = LocalPlayer.Character
     return char and char:FindFirstChildOfClass("Humanoid")
 end
+
 local function isGrounded(hrp)
     local rayOrigin = hrp.Position
     local rayDirection = Vector3.new(0, -5, 0)
@@ -158,6 +168,7 @@ local function isGrounded(hrp)
     local raycastResult = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
     return raycastResult ~= nil
 end
+
 local function keepUpright()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -165,6 +176,7 @@ local function keepUpright()
         hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z))
     end
 end
+
 local function teleportForward(distance)
     local char = LocalPlayer.Character
     if not char then return end
@@ -188,6 +200,7 @@ local function teleportForward(distance)
     hrp.CFrame = CFrame.new(teleportPos, teleportPos + hrp.CFrame.LookVector)
     keepUpright()
 end
+
 local function startWalkLoop()
     if moveConnection then moveConnection:Disconnect() end
     moveConnection = RunService.Heartbeat:Connect(function(dt)
@@ -207,7 +220,11 @@ local function startWalkLoop()
         end
     end)
 end
--- Main Tab - Buy Ingredients
+
+-- ───────────────────────────────────────────────
+--                Main Tab - Exotic Shop
+-- ───────────────────────────────────────────────
+
 MainTab:CreateSection("Exotic Shop")
 MainTab:CreateButton({
     Name = 'Buy All Ingredients',
@@ -220,55 +237,34 @@ MainTab:CreateButton({
             remote:InvokeServer("FreshWater")
         end)
         Rayfield:Notify({
-            Title = "Trident Hub",
+            Title = "Project P58",
             Content = "Bought all ingredients.",
             Duration = 3,
             Image = 4483362458,
         })
     end,
 })
--- NEW Teleport to Penthouse (replaces old Cook Pot)
+
 MainTab:CreateButton({
     Name = "Teleport to Penthouse",
     Callback = function()
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChild("Humanoid")
-        local root = character:FindFirstChild("HumanoidRootPart")
-        if humanoid and root then
-            FadeIn(0.3)
-            humanoid:ChangeState(0)
-            repeat task.wait() until not player:GetAttribute("LastACPos")
-            root.CFrame = CFrame.new(-181.86 + 2, 397.14, -587.99)
-            task.wait(2)
-            FadeOut(0.4)
-        end
+        teleportTo(CFrame.new(-181.86 + 2, 397.14, -587.99))
+        Rayfield:Notify({Title="Teleport", Content="Moved to Penthouse", Duration=2.5})
     end,
 })
--- NEW Teleport to Sell Juice
+
 MainTab:CreateButton({
     Name = "Teleport to Sell Juice",
     Callback = function()
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChild("Humanoid")
-        local root = character:FindFirstChild("HumanoidRootPart")
-        if humanoid and root then
-            FadeIn(0.3)
-            humanoid:ChangeState(0)
-            repeat task.wait() until not player:GetAttribute("LastACPos")
-            root.CFrame = CFrame.new(-71.63, 287.06, -319.95)
-            task.wait(2)
-            FadeOut(0.3)
-        end
+        teleportTo(CFrame.new(-71.63, 287.06, -319.95))
+        Rayfield:Notify({Title="Teleport", Content="Moved to Sell Juice", Duration=2.5})
     end,
 })
--- NEW Dupe (IceFruit Sell prompt spam for money/Cupz method)
+
 MainTab:CreateSection("Money Dupe")
 MainTab:CreateButton({
     Name = 'Dupe',
     Callback = function()
-        local Workspace = game:GetService("Workspace")
         local IceFruitSellPart = Workspace:FindFirstChild("IceFruit Sell")
         if not IceFruitSellPart then
             Rayfield:Notify({Title="Error", Content="IceFruit Sell part not found.", Duration=3})
@@ -276,20 +272,20 @@ MainTab:CreateButton({
         end
         local prompt = IceFruitSellPart:FindFirstChildOfClass("ProximityPrompt")
         if not prompt then
-            Rayfield:Notify({Title="Error", Content="ProximityPrompt not found inside IceFruit Sell.", Duration=3})
+            Rayfield:Notify({Title="Error", Content="ProximityPrompt not found.", Duration=3})
             return
         end
-        Rayfield:Notify({Title="Dupe", Content="Starting Cupz Money Method... (5000 attempts - may lag or flag AC)", Duration=5})
+        Rayfield:Notify({Title="Dupe", Content="Starting Cupz Money Method... (5000 attempts)", Duration=5})
         for i = 1, 5000 do
             task.spawn(function()
                 prompt:InputHoldBegin()
                 prompt:InputHoldEnd()
             end)
         end
-        Rayfield:Notify({Title="Dupe", Content="Cupz Money Method completed successfully! Check your cash.", Duration=4})
+        Rayfield:Notify({Title="Dupe", Content="Cupz Money Method completed! Check your cash.", Duration=4})
     end,
 })
--- Gun Dupe Section
+
 MainTab:CreateSection("Gun Dupe")
 MainTab:CreateButton({
     Name = 'Dupe Gun (Single)',
@@ -311,7 +307,33 @@ MainTab:CreateToggle({
         })
     end,
 })
--- Misc Tab
+
+-- ───────────────────────────────────────────────
+--                Teleports Tab (only Bank + Popeyes)
+-- ───────────────────────────────────────────────
+
+TeleportsTab:CreateSection("Locations")
+
+TeleportsTab:CreateButton({
+    Name = "🏦 Bank",
+    Callback = function()
+        teleportTo(CFrame.new(-225.791, 283.810, -1215.357, -0.999, 0, -0.048, 0, 1, 0, 0.048, 0, -0.999))
+        Rayfield:Notify({Title="Teleported", Content="🏦 Bank", Duration=2.5})
+    end,
+})
+
+TeleportsTab:CreateButton({
+    Name = "🍗 Popeyes",
+    Callback = function()
+        teleportTo(CFrame.new(-77.249, 283.633, -768.832, 0.124, 0, 0.992, 0, 1, 0, -0.992, 0, 0.124))
+        Rayfield:Notify({Title="Teleported", Content="🍗 Popeyes", Duration=2.5})
+    end,
+})
+
+-- ───────────────────────────────────────────────
+--                Misc Tab
+-- ───────────────────────────────────────────────
+
 local MiscBox = MiscTab:CreateSection("Misc")
 MiscTab:CreateToggle({ Name = "Infinite Stamina", CurrentValue = false, Flag = "InfiniteStamina", Callback = function(v) ModFlags.InfiniteStamina = v end })
 MiscTab:CreateToggle({ Name = "Infinite Hunger", CurrentValue = false, Flag = "InfiniteHunger", Callback = function(v) ModFlags.InfiniteHunger = v end })
@@ -360,7 +382,11 @@ MiscTab:CreateToggle({
         end
     end,
 })
--- Farms Tab (kept as-is from your original)
+
+-- ───────────────────────────────────────────────
+--                Farms Tab
+-- ───────────────────────────────────────────────
+
 local FarmsBox = FarmsTab:CreateSection("Auto Farms")
 FarmsTab:CreateButton({
     Name = 'Construction Job',
@@ -423,6 +449,7 @@ FarmsTab:CreateButton({
         end)
     end,
 })
+
 FarmsTab:CreateButton({
     Name = 'Studio Farm',
     Callback = function()
@@ -493,7 +520,11 @@ FarmsTab:CreateButton({
         FadeOut(0.4)
     end,
 })
--- Main Loops (kept as-is)
+
+-- ───────────────────────────────────────────────
+--                Main Loops & Events
+-- ───────────────────────────────────────────────
+
 RunService.RenderStepped:Connect(function()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
     local char = LocalPlayer.Character
@@ -536,6 +567,7 @@ RunService.RenderStepped:Connect(function()
         if fallDamage then fallDamage.Disabled = ModFlags.NoFallDamage end
     end
 end)
+
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if not ModFlags.InfiniteJump then return end
@@ -544,6 +576,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
         if hum and hum.Health > 0 then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 end)
+
 local function SetupCharacterEvents(char)
     local hum = char:WaitForChild("Humanoid")
     local root = char:WaitForChild("HumanoidRootPart")
@@ -555,9 +588,12 @@ local function SetupCharacterEvents(char)
     end)
     if ModFlags.RespawnWhereYouDied and typeof(DeathFrame) == "CFrame" then root.CFrame = DeathFrame end
 end
+
 local function onCharacterAdded(char) SetupCharacterEvents(char) end
+
 if LocalPlayer.Character then onCharacterAdded(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
 LocalPlayer.CharacterAdded:Connect(function()
     if ModFlags.DisableCameras and Lighting:FindFirstChild("Shiesty") then
         local remote = Lighting.Shiesty:FindFirstChildWhichIsA("RemoteEvent", true)
